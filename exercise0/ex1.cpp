@@ -7,8 +7,11 @@ using namespace std;
  * a)
  * Integers are represented in binary two's complement.
  * The first bit is the sign bit, 0 = positive, 1 = negative.
- * For positive numbers this means that a 1 at place n from the right has value 2^n, indexed from 0.
- * Negative numbers are in twos complement. This means they can be calculated as the number that together with it's positive counterpart sums up to 2^N (N = 32 in this case) in binary. The sign bit is included.
+ * For positive numbers this means that a 1 at place n from the right has value 2^n,
+ * indexed from 0.
+ * Negative numbers are in twos complement. This means they can be calculated as the
+ * number that together with it's positive counterpart sums up to 2^N (N = 32 in
+ * this case) in binary. The sign bit is included.
  */
 
 /*
