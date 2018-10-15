@@ -1,41 +1,47 @@
-//#include <chrono>
+#include <chrono>
 #include <functional>
 #include <iostream>
 #include <vector>
 
-#include <Eigen/Dense>
-#include <Eigen/Sparse>
-#include <Eigen/SparseLU>
+#include <eigen3/Eigen/Dense>
+#include <eigen3/Eigen/Sparse>
+#include <eigen3/Eigen/SparseLU>
+
+/*
+ * a)
+ *
+ * (Assume n >= 2)
+ * (3*(n - 2) + 4)*2 + (n + 1) = 7n - 3
+ */
 
 std::vector<Eigen::Triplet<double>> MakeTripletList(int n) {
 	int nnz = 3 * n - 2;
 	std::vector<Eigen::Triplet<double>> tripletList(nnz);
 
-	// TODO: Task (b)
-	// ...
-	// ...
-	// ...
-	// ...
-	// ...
+    for(int i = 0; i < n; ++i){
+        if(i > 0){
+            tripletList.push_back(Eigen::Triplet<double>(i, i-1, -1.0));
+        }
+
+        tripletList.push_back(Eigen::Triplet<double>(i, i, 2.0));
+
+        if(i < (n-1)){
+            tripletList.push_back(Eigen::Triplet<double>(i, i+1, -1.0));
+        }
+    }
 
 	return tripletList;
 }
 
 double Runtime(const std::function<void(void)> &f) {
+    auto start = std::chrono::system_clock::now();
 
-	// TODO: Task (c)
-	// ...
-	// ...
-	// ...
-	// ...
-	// ...
-	// ...
-	// ...
-	// ...
-	// ...
-	// ...
+    // Run function
+    f();
 
-    return .0;	// dummy return value
+    auto end = std::chrono::system_clock::now();
+    auto elapsed = end - start;
+    return elapsed.count();	// dummy return value
 }
 
 template <class T>
@@ -73,21 +79,23 @@ int main() {
 		// sparse LU decomposition
 		Eigen::SparseMatrix<double> S(n, n);
 		S.setFromTriplets(tripletList.begin(), tripletList.end());
-		// TODO: Task (c)
-		// ...
-		// ...
-		// ...
 
 		// dense LU decomposition
 		Eigen::MatrixXd D(S);
-		// TODO: Task (c)
-		// ...
-		// ...
-		// ...
+
+        Eigen::SparseLU<Eigen::SparseMatrix<double> > sparseLU;
+        Eigen::FullPivLU<Eigen::MatrixXd> denseLU;
 
 		// benchmark
-		// TODO: Task (c)
-		// ...
+        auto sparseFunc = [&S, &sparseLU](){
+            sparseLU.compute(S);
+        };
+        auto denseFunc = [&D, &denseLU](){
+            denseLU.compute(D);
+        };
+
+        runtimeSparse.push_back(Runtime(sparseFunc));
+        runtimeDense.push_back(Runtime(denseFunc));
 	}
 
 	std::cout << "Runtime in seconds using storage format..." << std::endl;
@@ -96,3 +104,13 @@ int main() {
 
 	return 0;
 }
+
+/*
+ * d)
+ *
+ * Considering nnz in= O(n) =>
+ *
+ * Dense LU: O(n^3)
+ * Sparse LU: ~O(nnz^2) = O(n^2)
+ *
+ */
