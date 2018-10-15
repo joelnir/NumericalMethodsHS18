@@ -24,14 +24,12 @@ Eigen::VectorXd r(const Eigen::VectorXd &x) {
 
 int main() {
 	int n = 11;				// Number of polynomial coefficients
-	int m = 11;					// Number of samples
+	int m;					// Number of samples
 	Eigen::VectorXd x;		// Samples in [-1, 1]
-    x.setLinSpaced(m, -1.0, 1.0);
-	Eigen::MatrixXd V = Vandermonde(x, n);		// Vandermonde matrix
-	Eigen::VectorXd y = r(x);		// r(x)
-	Eigen::VectorXd a(n);	// Polynomial coefficients
-
-    Eigen::VectorXd approx;
+	Eigen::MatrixXd V;		// Vandermonde matrix
+	Eigen::VectorXd y;		// r(x)
+	Eigen::VectorXd a1(n);	// Polynomial coefficients
+	Eigen::VectorXd a2(n);	// Polynomial coefficients
 
 	Eigen::IOFormat PythonFmt(Eigen::StreamPrecision, Eigen::DontAlignCols, ", ", ";\n", "[", "]", "[", "]");
 
@@ -41,55 +39,53 @@ int main() {
 	m = n;
 	x.setLinSpaced(m, -1.0, 1.0);
     y = r(x);
-    a = V.fullPivLu().solve(y);
+	V = Vandermonde(x, n);
+    a1 = V.fullPivLu().solve(y);
 	std::cout << "...overfitting:" << std::endl;
-	std::cout << a.transpose().format(PythonFmt) << std::endl;
-
-    approx = V*a;
-
-    // Save data for plotting
-    mglData x1_data, y1_data, x2_data, y2_data, r_data;
-    double x1_arr[m], y1_arr[m], r_arr[m];
-    for(int i = 0; i < m; ++i){
-        x1_arr[i] = x(i);
-        y1_arr[i] = approx(i);
-        r_arr[i] = y(i);
-    }
-    x1_data.Set(x1_arr, m);
-    y1_data.Set(y1_arr, m);
-    r_data.Set(r_arr, m);
-
+	std::cout << a1.transpose().format(PythonFmt) << std::endl;
 
 	// Compute least squares polynomial coefficients
 	m = 3 * n;
 	x.setLinSpaced(m, -1.0, 1.0);
     V = Vandermonde(x, n);
     y = r(x);
-    a = V.bdcSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(y);
+    a2 = V.bdcSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(y);
 
 	std::cout << "...least squares:" << std::endl;
-	std::cout << a.transpose().format(PythonFmt) << std::endl;
+	std::cout << a2.transpose().format(PythonFmt) << std::endl;
 
-    approx = V*a;
+    // Save data for plotting
+    int p = 30;
+    Eigen::VectorXd x_p(p);
+    x_p.setLinSpaced(p, -1.0, 1.0);
 
-    double x2_arr[m], y2_arr[m];
-    for(int i = 0; i < m; ++i){
-        x2_arr[i] = x(i);
-        y2_arr[i] = approx(i);
+    Eigen::VectorXd y1 = Vandermonde(x_p, n)*a1;
+    Eigen::VectorXd y2 = Vandermonde(x_p, n)*a2;
+    Eigen::VectorXd yr = r(x_p);
+
+    mglData x_data, y1_data, y2_data, r_data;
+    double x_arr[p], y1_arr[p], r_arr[p], y2_arr[p];
+    for(int i = 0; i < p; ++i){
+        x_arr[i] = x_p(i);
+        y1_arr[i] = y1(i);
+        y2_arr[i] = y2(i);
+        r_arr[i] = yr(i);
     }
-    x2_data.Set(x2_arr, m);
+    x_data.Set(x_arr, m);
+    y1_data.Set(y1_arr, m);
+    r_data.Set(r_arr, m);
     y2_data.Set(y2_arr, m);
 
     mglGraph *gr = new mglGraph;
     gr->Title("Approximations");
-  	gr->SetRanges(-1, 1, 0, 1);
+  	gr->SetRanges(-1.0, 1.0, 0.0, 1.0);
   	gr->Axis();
 
-  	gr->Plot(x1_data, y1_data,"r");
+  	gr->Plot(x_data, y1_data,"r");
   	gr->AddLegend("Approximation 1 (inverse)","r");
-  	gr->Plot(x2_data, y2_data,"g");
+  	gr->Plot(x_data, y2_data,"g");
   	gr->AddLegend("Approximation 2 (LSQ)","g");
-  	gr->Plot(x1_data, r_data,"b");
+  	gr->Plot(x_data, r_data,"b");
   	gr->AddLegend("Runge","b");
 
   	gr->Label('x',"X",0);
@@ -101,7 +97,7 @@ int main() {
 /*
  * d)
  *
- * In b) the solution is exactly the Runge function.
+ * In b) the solution has overfit to the data points from the runge function.
  * The least square solution from c) approximates the function,
  * showing an almost oscillating behaviour around the true value.
  *
