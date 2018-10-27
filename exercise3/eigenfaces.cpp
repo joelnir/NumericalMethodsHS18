@@ -1,4 +1,4 @@
-#include <iostream> 
+#include <iostream>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -42,33 +42,58 @@ VectorXd load_pgm(const std::string &filename) {
 }
 
 int main() {
-	
+
 	int h = 231;
 	int w = 195;
 	int M = 15;
 
 	MatrixXd faces(h*w, M);
+	MatrixXd A(h*w, M);
+
 	VectorXd meanFace(h*w);
-	
+	VectorXd sumFace = VectorXd::Zero(h*w);
+
 	// loads pictures as flattened vectors into faces
 	for (int i=0; i<M; i++) {
-		std::string filename = "./basePictures/subject"+ 
+		std::string filename = "./basePictures/subject"+
 			std::to_string(i+1) + ".pgm";
 		VectorXd flatPic = load_pgm(filename);
 		faces.col(i) = flatPic;
-		
-		// TODO: Point (b)
+
+        sumFace = sumFace += flatPic;
 	}
 
-	
-	// TODO: Point (e)
+    // Compute mean
+    meanFace = (1/M) * sumFace;
+
+    for(int i = 0; i < M; ++i){
+        A.col(i) = faces.col(i) - meanFace;
+    }
+
+    JacobiSVD<MatrixXd> svd(A, ComputeThinU | ComputeThinV);
+    MatrixXd eigenFaces = svd.matrixU();
 
 	// try to recognize a test face
-	string testPicName = "./testPictures/subject01.happy.pgm";
+    std::string testPicName = "./testPictures/Narutowicz.pgm";
 	VectorXd newFace = load_pgm(testPicName);
 
-	// TODO: Point (f)
-	
-	// TODO: Point (g)
+    VectorXd proj(M);
+    proj = eigenFaces.transpose() * (newFace - meanFace);
 
+    int minK = -1;
+    double minDist = 0;
+    double dist;
+    VectorXd proj_k(M);;
+    for(int k = 0; k < M; ++k){
+        proj_k =  eigenFaces.transpose() * A.col(k);
+
+        dist = (proj-proj_k).norm();
+
+        if((minK == -1) || (dist < minDist)){
+            minK = k+1;
+            minDist = dist;
+        }
+    }
+
+    std::cout << "Minimal k: " << minK << std::endl;
 }
