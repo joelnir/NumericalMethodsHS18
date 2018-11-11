@@ -7,17 +7,68 @@
 
 
 using namespace Eigen;
+using namespace std;
 
 void fft2(MatrixXcd &C, const MatrixXcd &Y) {
-	// TODO: C becomes the discrete fourier transform of Y
+    Eigen::FFT<double> fft;
+    MatrixXcd temp(Y.rows(), Y.cols());
+
+    // FFT rows of Y
+    Eigen::VectorXcd tmpRow(Y.cols());
+    for(int i = 0; i < Y.rows(); ++i){
+        tmpRow = Y.row(i);
+        temp.row(i) = fft.fwd(tmpRow).transpose();
+    }
+
+    // FFT cols of y into C
+    for(int i = 0; i < Y.cols(); ++i){
+        C.col(i) = fft.fwd(temp.col(i));
+    }
 }
 
 void ifft2(MatrixXcd &C, const MatrixXcd &Y) {
-	// TODO: C becomes the inverse discrete fourier transform of Y
+    Eigen::FFT<double> fft;
+    MatrixXcd temp(Y.rows(), Y.cols());
+
+    // FFT rows of Y
+    Eigen::VectorXcd tmpRow(Y.cols());
+    for(int i = 0; i < Y.rows(); ++i){
+        tmpRow = Y.row(i);
+        temp.row(i) = fft.inv(tmpRow).transpose();
+    }
+
+    // FFT cols of y into C
+    for(int i = 0; i < Y.cols(); ++i){
+        C.col(i) = fft.inv(temp.col(i));
+    }
 }
 
 void conv2(MatrixXcd &C, const MatrixXcd &A1, const MatrixXcd &A2) {
-	// TODO: C becomes the discrete convolution of A1 and A2
+    int rows = A1.rows() + A2.rows() - 1;
+    int cols = A1.cols() + A2.cols() - 1;
+
+    // Zero pad
+    MatrixXcd A1zp(rows, cols);
+    A1zp << A1, MatrixXcd::Zero(A1.rows(), cols - A1.cols()),
+         MatrixXcd::Zero(rows - A1.rows(), cols);
+
+    MatrixXcd A2zp(rows, cols);
+    A2zp << A2, MatrixXcd::Zero(A2.rows(), cols - A2.cols()),
+         MatrixXcd::Zero(rows - A2.rows(), cols);
+
+    // DFT
+    MatrixXcd dft1(rows, cols);
+    MatrixXcd dft2(rows, cols);
+    fft2(dft1, A1zp);
+    fft2(dft2, A2zp);
+
+    // Mult
+    MatrixXcd multRes = dft1.cwiseProduct(dft2);
+
+    // IDFT
+    MatrixXcd ifftRes(rows, cols);
+    ifft2(ifftRes, multRes);
+    C = ifftRes.block(0, 0, A1.rows(),A1.cols());
 }
 
 
@@ -28,7 +79,7 @@ int main() {
 		 0,-1, 0;
 
 	MatrixXcd A = MatrixXcd::Zero(27,77);
-	A <<	
+	A <<
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,
@@ -56,9 +107,17 @@ int main() {
 	0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0;
-	
-	MatrixXcd conv = MatrixXcd::Zero(27,77);
-	conv2(conv,A,F);
-	MatrixXi out = conv.real().cast<int>();
-	std::cout << out;
+
+	// MatrixXcd res1 = MatrixXcd::Zero(27,77);
+	// MatrixXcd res2 = MatrixXcd::Zero(27,77);
+    // fft2(res1, A);
+    // ifft2(res2, res1);
+    // cout << res2.real().cast<int>() << endl;
+
+    IOFormat myFormat(StreamPrecision, 0, "");
+
+    MatrixXcd conv = MatrixXcd::Zero(27,77);
+    conv2(conv,A,F);
+    MatrixXi out = conv.real().cast<int>();
+    std::cout << out.format(myFormat);
 }
