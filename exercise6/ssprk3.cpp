@@ -8,7 +8,7 @@ double f(double t, double u) {
 }
 
 
-/// Uses the SSP RK3 method to compute u from time 0 to time T 
+/// Uses the SSP RK3 method to compute u from time 0 to time T
 /// for the ODE $u'=e^{-2t}-2u$
 ///
 /// @param[out] u at the end of the call (solution at all time steps)
@@ -25,8 +25,20 @@ void SSPRK3(std::vector<double> & u, std::vector<double> & time,
     u.resize(nsteps+1);
     time.resize(nsteps+1);
 
-    // Write your SSPRK3 code here
+    // Initial conditions
+    u[0] = u0;
+    time[0] = 0;
 
+    double k1, k2, k3;
+    for(int i = 1; i <= nsteps; ++i){
+        time[i] = dt*i;
+
+        k1 = f(time[i-1], u[i-1]);
+        k2 = f(time[i], u[i-1]+dt*k1);
+        k3 = f(time[i-1] + 0.5*dt, u[i-1]+0.25*dt*(k1 + k2));
+
+        u[i] = u[i-1] + (dt/6.0)*(k1 + k2 + 4*k3);
+    }
 }
 //----------------SSPRK3End----------------
 

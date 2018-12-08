@@ -3,13 +3,23 @@
 #include <iostream>
 #include <vector>
 
+using namespace std;
+
 std::vector<double> Heun(const std::function<double(double, double)> &f, const std::vector<double> &t, double y0) {
 	int n = t.size();
 	std::vector<double> y(n);
-	// TODO: Task (b)
-	// ...
-	// compute y
-	// ...
+
+    // Initial value
+    y[0] = y0;
+
+    double h = t[1] - t[0];
+
+    double k1, k2;
+    for(int k = 1; k < n; ++k){
+        k1 = f(t[k-1], y[k-1]);
+        k2 = f(t[k], y[k-1] + h*k1);
+        y[k] = y[k-1] + (h/2)*(k1 + k2);
+    }
 
     return y;
 }
@@ -61,8 +71,8 @@ int main() {
     	h[j] = 1. / n[j];
     	std::vector<double> t = LinSpace(n[j] + 1, .0, T);
     	std::vector<double> y = Heun(f, t, .0);
-    	// TODO: Task (g)
-    	// compute the error for step size h[j]
+
+        error[j] = (abs(Y(1.0) - y[n[j]]));
     }
 
     std::cout << "h = " << h << std::endl;
